@@ -13,12 +13,12 @@ def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
         block = data[i : i + block_size]
         if len(block) < block_size:
             block += b"\x00" * (block_size - len(block))
-        xored = xor_bytes(block, prev)
+        xored = xor_bytes(block, prev[:block_size])
         m = int.from_bytes(xored, "big")
         c = pow(m, e, n)
         c_bytes = c.to_bytes(block_out, "big")
         encrypted.extend(c_bytes)
-        prev = c_bytes[:block_size]
+        prev = c_bytes
     return encrypted
 
 
@@ -34,7 +34,7 @@ def rsa_cbc_decrypt(data, block_size, d, n):
         c = int.from_bytes(block, "big")
         m = pow(c, d, n)
         m_bytes = m.to_bytes(block_size, "big")
-        plain = xor_bytes(m_bytes, prev)
+        plain = xor_bytes(m_bytes, prev[:block_size])
         decrypted.extend(plain)
-        prev = block  # ✅ POPRAWKA: użyj całego zaszyfrowanego bloku
+        prev = block
     return decrypted
