@@ -1,7 +1,8 @@
 from utils import xor_bytes
 import os
 
-# === RSA CBC Mode (własna) ===
+
+# CBC
 def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
     block_out = (n.bit_length() + 7) // 8
     if iv is None:
@@ -28,10 +29,12 @@ def rsa_cbc_decrypt(data, block_size, d, n):
     decrypted = bytearray()
     for i in range(block_size, len(data), block_out):
         block = data[i : i + block_out]
+        if len(block) < block_out:
+            break
         c = int.from_bytes(block, "big")
         m = pow(c, d, n)
         m_bytes = m.to_bytes(block_size, "big")
         plain = xor_bytes(m_bytes, prev)
         decrypted.extend(plain)
-        prev = block[:block_size]
+        prev = block  # ✅ POPRAWKA: użyj całego zaszyfrowanego bloku
     return decrypted

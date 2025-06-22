@@ -1,6 +1,7 @@
 from Crypto.Cipher import PKCS1_OAEP
 
-# === RSA z biblioteki ===
+
+# RSA z biblioteki
 def rsa_encrypt_lib(data, pubkey):
     cipher = PKCS1_OAEP.new(pubkey)
     block_size = pubkey.size_in_bytes() - 42

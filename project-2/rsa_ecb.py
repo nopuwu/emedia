@@ -1,4 +1,4 @@
-# === RSA ECB Mode (własna) ===
+# ECB
 def rsa_ecb_encrypt(data, block_size_in, e, n):
     block_size_out = (n.bit_length() + 7) // 8
     encrypted = bytearray()

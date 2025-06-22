@@ -6,8 +6,8 @@ import struct
 import zlib
 
 
-# === RSA Key Generation ===
-def generate_keys(bits=1024):
+# Generacja kluczy RSA
+def generate_keys(bits=2048):
     key = CryptoRSA.generate(bits)
     e = key.e
     d = key.d
@@ -17,7 +17,7 @@ def generate_keys(bits=1024):
     return pubkey, privkey, key.publickey(), key
 
 
-# === RSA ECB Mode (własna) ===
+# ECB
 def rsa_ecb_encrypt(data, block_size_in, e, n):
     block_size_out = (n.bit_length() + 7) // 8
     encrypted = bytearray()
@@ -46,7 +46,7 @@ def rsa_ecb_decrypt(data, block_size_in, d, n):
     return decrypted
 
 
-# === RSA CBC Mode (własna) ===
+# CBC
 def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
     block_out = (n.bit_length() + 7) // 8
     if iv is None:
@@ -73,16 +73,18 @@ def rsa_cbc_decrypt(data, block_size, d, n):
     decrypted = bytearray()
     for i in range(block_size, len(data), block_out):
         block = data[i : i + block_out]
+        if len(block) < block_out:
+            break
         c = int.from_bytes(block, "big")
         m = pow(c, d, n)
         m_bytes = m.to_bytes(block_size, "big")
         plain = xor_bytes(m_bytes, prev)
         decrypted.extend(plain)
-        prev = block[:block_size]
+        prev = block  # ✅ POPRAWKA: użyj całego zaszyfrowanego bloku
     return decrypted
 
 
-# === RSA z biblioteki ===
+# RSA z biblioteki
 def rsa_encrypt_lib(data, pubkey):
     cipher = PKCS1_OAEP.new(pubkey)
     block_size = pubkey.size_in_bytes() - 42
@@ -103,7 +105,7 @@ def rsa_decrypt_lib(data, privkey):
     return decrypted
 
 
-# === Ogólna funkcja do testowania metod szyfrowania IDAT
+# Ogólna funkcja do szyfrowania i deszyfrowania IDAT
 def encrypt_idat(png_bytes, encrypt_fn):
     chunks = parse_chunks(png_bytes)
     new_chunks = []
@@ -132,7 +134,7 @@ def decrypt_idat(png_bytes, decrypt_fn):
     return build_png(new_chunks)
 
 
-# === Metoda druga: szyfrowanie skompresowanych danych
+# Metoda druga: operacje na skompresowanych danych
 def encrypt_idat_compressed(png_bytes, encrypt_fn):
     chunks = parse_chunks(png_bytes)
     new_chunks = []
@@ -157,7 +159,7 @@ def decrypt_idat_compressed(png_bytes, decrypt_fn):
     return build_png(new_chunks)
 
 
-# === Porównanie obrazów
+# Porównanie obrazów
 def compare_images(file1, file2):
     img1 = Image.open(file1).convert("RGB")
     img2 = Image.open(file2).convert("RGB")
@@ -169,7 +171,7 @@ def compare_images(file1, file2):
         print(f"{file1} i {file2} różnią się. Różnych pikseli: {diff_pixels}")
 
 
-# === PNG Chunk Helpers ===
+# Parsowanie chunków
 def parse_chunks(png_bytes):
     chunks = []
     offset = 8  # skip PNG signature
@@ -200,17 +202,16 @@ def xor_bytes(a, b):
     return bytes(x ^ y for x, y in zip(a, b))
 
 
-# === MAIN ===
 if __name__ == "__main__":
-    block_size = 50
-    public_key, private_key, lib_pub, lib_priv = generate_keys(bits=1024)
+    block_size = 100
+    public_key, private_key, lib_pub, lib_priv = generate_keys(2048)
     e, n = public_key
     d, _ = private_key
 
     with open("input.png", "rb") as f:
         original_bytes = f.read()
 
-    # --- ECB ---
+    # ECB
     ecb_encrypted = encrypt_idat(
         original_bytes, lambda data: rsa_ecb_encrypt(data, block_size, e, n)
     )
@@ -222,7 +223,7 @@ if __name__ == "__main__":
     with open("ecb_decrypted.png", "wb") as f:
         f.write(ecb_decrypted)
 
-    # --- CBC ---
+    # CBC
     cbc_encrypted = encrypt_idat(
         original_bytes, lambda data: rsa_cbc_encrypt(data, block_size, e, n)
     )
@@ -234,7 +235,7 @@ if __name__ == "__main__":
     with open("cbc_decrypted.png", "wb") as f:
         f.write(cbc_decrypted)
 
-    # --- Library RSA (PKCS1_OAEP) ---
+    # RSA z biblioteki
     lib_encrypted = encrypt_idat(
         original_bytes, lambda data: rsa_encrypt_lib(data, lib_pub)
     )
@@ -246,7 +247,7 @@ if __name__ == "__main__":
     with open("lib_decrypted.png", "wb") as f:
         f.write(lib_decrypted)
 
-    # --- ECB bezpośrednio na danych skompresowanych ---
+    # ECB bezpośrednio na skompresowanych danych
     ecb_direct_encrypted = encrypt_idat_compressed(
         original_bytes, lambda data: rsa_ecb_encrypt(data, block_size, e, n)
     )
@@ -258,7 +259,7 @@ if __name__ == "__main__":
     with open("ecb_direct_decrypted.png", "wb") as f:
         f.write(ecb_direct_decrypted)
 
-    # === Porównanie wyników ===
+    # Porównanie wyników
     compare_images("input.png", "ecb_decrypted.png")
     compare_images("input.png", "ecb_direct_decrypted.png")
     compare_images("input.png", "cbc_decrypted.png")

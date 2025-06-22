@@ -3,8 +3,9 @@ from PIL import Image, ImageChops
 import struct
 import zlib
 
-# === RSA Key Generation ===
-def generate_keys(bits=1024):
+
+# Generacja kluczy RSA
+def generate_keys(bits=2048):
     key = CryptoRSA.generate(bits)
     e = key.e
     d = key.d
@@ -14,7 +15,7 @@ def generate_keys(bits=1024):
     return pubkey, privkey, key.publickey(), key
 
 
-# === Porównanie obrazów
+# Porównanie obrazów
 def compare_images(file1, file2):
     img1 = Image.open(file1).convert("RGB")
     img2 = Image.open(file2).convert("RGB")
@@ -26,7 +27,7 @@ def compare_images(file1, file2):
         print(f"{file1} i {file2} różnią się. Różnych pikseli: {diff_pixels}")
 
 
-# === PNG Chunk Helpers ===
+# Parsowanie chunków
 def parse_chunks(png_bytes):
     chunks = []
     offset = 8  # skip PNG signature
