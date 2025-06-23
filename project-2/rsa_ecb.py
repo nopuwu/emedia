@@ -1,5 +1,5 @@
-# ECB
 def rsa_ecb_encrypt(data, block_size_in, e, n):
+    """Szyfruje dane blokowo w trybie ECB z użyciem RSA."""
     block_size_out = (n.bit_length() + 7) // 8
     encrypted = bytearray()
     for i in range(0, len(data), block_size_in):
@@ -14,6 +14,7 @@ def rsa_ecb_encrypt(data, block_size_in, e, n):
 
 
 def rsa_ecb_decrypt(data, block_size_in, d, n):
+    """Deszyfruje dane RSA w trybie ECB."""
     block_size_out = (n.bit_length() + 7) // 8
     decrypted = bytearray()
     for i in range(0, len(data), block_size_out):

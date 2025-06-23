@@ -6,24 +6,13 @@ import struct
 import zlib
 
 
-# Generacja kluczy RSA
-def generate_keys(bits=2048):
-    key = CryptoRSA.generate(bits)
-    e = key.e
-    d = key.d
-    n = key.n
-    pubkey = (e, n)
-    privkey = (d, n)
-    return pubkey, privkey, key.publickey(), key
-
-
-# ECB
 def rsa_ecb_encrypt(data, block_size_in, e, n):
+    """Szyfruje dane blokowo w trybie ECB z użyciem RSA."""
     block_size_out = (n.bit_length() + 7) // 8
     encrypted = bytearray()
     for i in range(0, len(data), block_size_in):
         block = data[i : i + block_size_in]
-        if len(block) < block_size_in:
+        if len(block) < block_size_in: # padding
             block += b"\x00" * (block_size_in - len(block))
         m = int.from_bytes(block, "big")
         c = pow(m, e, n)
@@ -33,6 +22,7 @@ def rsa_ecb_encrypt(data, block_size_in, e, n):
 
 
 def rsa_ecb_decrypt(data, block_size_in, d, n):
+    """Deszyfruje dane RSA w trybie ECB."""
     block_size_out = (n.bit_length() + 7) // 8
     decrypted = bytearray()
     for i in range(0, len(data), block_size_out):
@@ -46,8 +36,8 @@ def rsa_ecb_decrypt(data, block_size_in, d, n):
     return decrypted
 
 
-# CBC
 def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
+    """Szyfruje dane RSA w trybie CBC."""
     block_out = (n.bit_length() + 7) // 8
     if iv is None:
         iv = os.urandom(block_size)
@@ -55,7 +45,7 @@ def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
     prev = iv
     for i in range(0, len(data), block_size):
         block = data[i : i + block_size]
-        if len(block) < block_size:
+        if len(block) < block_size: # padding
             block += b"\x00" * (block_size - len(block))
         xored = xor_bytes(block, prev[:block_size])
         m = int.from_bytes(xored, "big")
@@ -67,6 +57,7 @@ def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
 
 
 def rsa_cbc_decrypt(data, block_size, d, n):
+    """Deszyfruje dane RSA zaszyfrowane w trybie CBC."""
     block_out = (n.bit_length() + 7) // 8
     iv = data[:block_size]
     prev = iv
@@ -84,8 +75,8 @@ def rsa_cbc_decrypt(data, block_size, d, n):
     return decrypted
 
 
-# RSA z biblioteki
 def rsa_encrypt_lib(data, pubkey):
+    """Szyfruje dane za pomocą biblioteki PKCS1_OAEP."""
     cipher = PKCS1_OAEP.new(pubkey)
     block_size = pubkey.size_in_bytes() - 42
     encrypted = bytearray()
@@ -96,6 +87,7 @@ def rsa_encrypt_lib(data, pubkey):
 
 
 def rsa_decrypt_lib(data, privkey):
+    """Deszyfruje dane RSA za pomocą PKCS1_OAEP."""
     cipher = PKCS1_OAEP.new(privkey)
     block_size = privkey.size_in_bytes()
     decrypted = bytearray()
@@ -105,8 +97,8 @@ def rsa_decrypt_lib(data, privkey):
     return decrypted
 
 
-# Ogólna funkcja do szyfrowania i deszyfrowania IDAT
 def encrypt_idat(png_bytes, encrypt_fn):
+    """Szyfruje tylko dane IDAT (po dekompresji) w pliku PNG."""
     chunks = parse_chunks(png_bytes)
     new_chunks = []
     for typ, data, crc in chunks:
@@ -121,6 +113,7 @@ def encrypt_idat(png_bytes, encrypt_fn):
 
 
 def decrypt_idat(png_bytes, decrypt_fn):
+    """Deszyfruje dane IDAT (po dekompresji) w pliku PNG."""
     chunks = parse_chunks(png_bytes)
     new_chunks = []
     for typ, data, crc in chunks:
@@ -134,8 +127,8 @@ def decrypt_idat(png_bytes, decrypt_fn):
     return build_png(new_chunks)
 
 
-# Metoda druga: operacje na skompresowanych danych
 def encrypt_idat_compressed(png_bytes, encrypt_fn):
+    """Szyfruje dane IDAT bez dekompresji (na skompresowanych danych)."""
     chunks = parse_chunks(png_bytes)
     new_chunks = []
     for typ, data, crc in chunks:
@@ -148,6 +141,7 @@ def encrypt_idat_compressed(png_bytes, encrypt_fn):
 
 
 def decrypt_idat_compressed(png_bytes, decrypt_fn):
+    """Deszyfruje dane IDAT bez dekompresji (na skompresowanych danych)."""
     chunks = parse_chunks(png_bytes)
     new_chunks = []
     for typ, data, crc in chunks:
@@ -159,8 +153,19 @@ def decrypt_idat_compressed(png_bytes, decrypt_fn):
     return build_png(new_chunks)
 
 
-# Porównanie obrazów
+def generate_keys(bits=2048):
+    """Generuje parę kluczy RSA o podanej długości bitów."""
+    key = CryptoRSA.generate(bits)
+    e = key.e
+    d = key.d
+    n = key.n
+    pubkey = (e, n)
+    privkey = (d, n)
+    return pubkey, privkey, key.publickey(), key
+
+
 def compare_images(file1, file2):
+    """Porównuje dwa obrazy PNG piksel po pikselu i wyświetla różnice."""
     img1 = Image.open(file1).convert("RGB")
     img2 = Image.open(file2).convert("RGB")
     diff = ImageChops.difference(img1, img2)
@@ -171,10 +176,10 @@ def compare_images(file1, file2):
         print(f"{file1} i {file2} różnią się. Różnych pikseli: {diff_pixels}")
 
 
-# Parsowanie chunków
 def parse_chunks(png_bytes):
+    """Parsuje bajty PNG i zwraca listę chunków jako (typ, dane, crc)."""
     chunks = []
-    offset = 8
+    offset = 8  # do pominięcia sygnatury PNG
     while offset < len(png_bytes):
         length = struct.unpack(">I", png_bytes[offset : offset + 4])[0]
         chunk_type = png_bytes[offset + 4 : offset + 8]
@@ -186,6 +191,7 @@ def parse_chunks(png_bytes):
 
 
 def build_png(chunks):
+    """Buduje plik PNG z listy chunków."""
     sig = b"\x89PNG\r\n\x1a\n"
     png = bytearray(sig)
     for chunk_type, data, _ in chunks:
@@ -199,16 +205,20 @@ def build_png(chunks):
 
 
 def xor_bytes(a, b):
+    """Zwraca wynik operacji XOR pomiędzy bajtami a i b."""
     return bytes(x ^ y for x, y in zip(a, b))
 
 
 if __name__ == "__main__":
+    file = "input.png"
     block_size = 100
     public_key, private_key, lib_pub, lib_priv = generate_keys(2048)
     e, n = public_key
     d, _ = private_key
 
-    with open("input.png", "rb") as f:
+    with open(file, "rb") as f:
+        if f.read(8) != b"\x89PNG\r\n\x1a\n":
+            raise ValueError("To nie jest prawidłowy plik PNG")
         original_bytes = f.read()
 
     # ECB

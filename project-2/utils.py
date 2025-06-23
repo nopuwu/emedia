@@ -4,8 +4,8 @@ import struct
 import zlib
 
 
-# Generacja kluczy RSA
 def generate_keys(bits=2048):
+    """Generuje parę kluczy RSA o podanej długości bitów."""
     key = CryptoRSA.generate(bits)
     e = key.e
     d = key.d
@@ -15,8 +15,8 @@ def generate_keys(bits=2048):
     return pubkey, privkey, key.publickey(), key
 
 
-# Porównanie obrazów
 def compare_images(file1, file2):
+    """Porównuje dwa obrazy PNG piksel po pikselu i wyświetla różnice."""
     img1 = Image.open(file1).convert("RGB")
     img2 = Image.open(file2).convert("RGB")
     diff = ImageChops.difference(img1, img2)
@@ -27,10 +27,10 @@ def compare_images(file1, file2):
         print(f"{file1} i {file2} różnią się. Różnych pikseli: {diff_pixels}")
 
 
-# Parsowanie chunków
 def parse_chunks(png_bytes):
+    """Parsuje bajty PNG i zwraca listę chunków jako (typ, dane, crc)."""
     chunks = []
-    offset = 8  # skip PNG signature
+    offset = 8  # do pominięcia sygnatury PNG
     while offset < len(png_bytes):
         length = struct.unpack(">I", png_bytes[offset : offset + 4])[0]
         chunk_type = png_bytes[offset + 4 : offset + 8]
@@ -42,6 +42,7 @@ def parse_chunks(png_bytes):
 
 
 def build_png(chunks):
+    """Buduje plik PNG z listy chunków."""
     sig = b"\x89PNG\r\n\x1a\n"
     png = bytearray(sig)
     for chunk_type, data, _ in chunks:
@@ -55,4 +56,5 @@ def build_png(chunks):
 
 
 def xor_bytes(a, b):
+    """Zwraca wynik operacji XOR pomiędzy bajtami a i b."""
     return bytes(x ^ y for x, y in zip(a, b))

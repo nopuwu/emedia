@@ -2,8 +2,8 @@ from utils import xor_bytes
 import os
 
 
-# CBC
 def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
+    """Szyfruje dane RSA w trybie CBC."""
     block_out = (n.bit_length() + 7) // 8
     if iv is None:
         iv = os.urandom(block_size)
@@ -23,6 +23,7 @@ def rsa_cbc_encrypt(data, block_size, e, n, iv=None):
 
 
 def rsa_cbc_decrypt(data, block_size, d, n):
+    """Deszyfruje dane RSA zaszyfrowane w trybie CBC."""
     block_out = (n.bit_length() + 7) // 8
     iv = data[:block_size]
     prev = iv
