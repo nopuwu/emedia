@@ -211,15 +211,19 @@ def xor_bytes(a, b):
 
 if __name__ == "__main__":
     file = "input.png"
+    output_dir = "output"
     block_size = 100
     public_key, private_key, lib_pub, lib_priv = generate_keys(2048)
     e, n = public_key
     d, _ = private_key
 
     with open(file, "rb") as f:
-        if f.read(8) != b"\x89PNG\r\n\x1a\n":
-            raise ValueError("To nie jest prawidłowy plik PNG")
         original_bytes = f.read()
+        if original_bytes[:8] != b"\x89PNG\r\n\x1a\n":
+            raise ValueError("To nie jest prawidłowy plik PNG")
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # ECB
     ecb_encrypted = encrypt_idat(
@@ -228,9 +232,9 @@ if __name__ == "__main__":
     ecb_decrypted = decrypt_idat(
         ecb_encrypted, lambda data: rsa_ecb_decrypt(data, block_size, d, n)
     )
-    with open("ecb_encrypted.png", "wb") as f:
+    with open(f"{output_dir}/ecb_encrypted.png", "wb") as f:
         f.write(ecb_encrypted)
-    with open("ecb_decrypted.png", "wb") as f:
+    with open(f"{output_dir}/ecb_decrypted.png", "wb") as f:
         f.write(ecb_decrypted)
 
     # CBC
@@ -240,9 +244,9 @@ if __name__ == "__main__":
     cbc_decrypted = decrypt_idat(
         cbc_encrypted, lambda data: rsa_cbc_decrypt(data, block_size, d, n)
     )
-    with open("cbc_encrypted.png", "wb") as f:
+    with open(f"{output_dir}/cbc_encrypted.png", "wb") as f:
         f.write(cbc_encrypted)
-    with open("cbc_decrypted.png", "wb") as f:
+    with open(f"{output_dir}/cbc_decrypted.png", "wb") as f:
         f.write(cbc_decrypted)
 
     # RSA z biblioteki
@@ -252,9 +256,9 @@ if __name__ == "__main__":
     lib_decrypted = decrypt_idat(
         lib_encrypted, lambda data: rsa_decrypt_lib(data, lib_priv)
     )
-    with open("lib_encrypted.png", "wb") as f:
+    with open(f"{output_dir}/lib_encrypted.png", "wb") as f:
         f.write(lib_encrypted)
-    with open("lib_decrypted.png", "wb") as f:
+    with open(f"{output_dir}/lib_decrypted.png", "wb") as f:
         f.write(lib_decrypted)
 
     # ECB bezpośrednio na skompresowanych danych
@@ -264,13 +268,13 @@ if __name__ == "__main__":
     ecb_direct_decrypted = decrypt_idat_compressed(
         ecb_direct_encrypted, lambda data: rsa_ecb_decrypt(data, block_size, d, n)
     )
-    with open("ecb_direct_encrypted.png", "wb") as f:
+    with open(f"{output_dir}/ecb_direct_encrypted.png", "wb") as f:
         f.write(ecb_direct_encrypted)
-    with open("ecb_direct_decrypted.png", "wb") as f:
+    with open(f"{output_dir}/ecb_direct_decrypted.png", "wb") as f:
         f.write(ecb_direct_decrypted)
 
     # Porównanie wyników
-    compare_images("input.png", "ecb_decrypted.png")
-    compare_images("input.png", "ecb_direct_decrypted.png")
-    compare_images("input.png", "cbc_decrypted.png")
-    compare_images("input.png", "lib_decrypted.png")
+    compare_images("input.png", f"{output_dir}/ecb_decrypted.png")
+    compare_images("input.png", f"{output_dir}/ecb_direct_decrypted.png")
+    compare_images("input.png", f"{output_dir}/cbc_decrypted.png")
+    compare_images("input.png", f"{output_dir}/lib_decrypted.png")
