@@ -17,8 +17,8 @@ def generate_keys(bits=2048):
 
 def compare_images(file1, file2):
     """Porównuje dwa obrazy PNG piksel po pikselu i wyświetla różnice."""
-    img1 = Image.open(file1).convert("RGB")
-    img2 = Image.open(file2).convert("RGB")
+    img1 = Image.open(file1).convert("RGBA")
+    img2 = Image.open(file2).convert("RGBA")
     diff = ImageChops.difference(img1, img2)
     if diff.getbbox() is None:
         print(f"{file1} i {file2} są identyczne.")
